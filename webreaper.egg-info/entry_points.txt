@@ -1,2 +1,2 @@
 [console_scripts]
-webreaper = webreaper.cli:app
+webreaper = webreaper.cli:cli
