@@ -19,6 +19,7 @@ from .parsers.hakrawler import parse_hakrawler_lines
 from .scoring import compute_reapscore
 from .paths_packs import generate_path_urls, list_packs as list_path_packs
 from .report.render_md import write_report, write_eli5_report
+from .dependency_checker import check_dependencies, check_tool
 
 app = typer.Typer(add_completion=False, help="webReaper: harvest → probe → rank → report")
 
@@ -183,6 +184,45 @@ def _reap_impl(
     base = _base_host(target)
 
     banner(quiet=quiet)
+    
+    # Check dependencies
+    if not quiet:
+        typer.secho("[*] Checking tool dependencies...", fg=typer.colors.CYAN)
+    
+    # Determine which tools are needed
+    required_tools = ["httpx"]  # httpx is always required
+    optional_tools = []
+    
+    if use_katana:
+        required_tools.append("katana")
+    if use_gau:
+        optional_tools.append("gau")
+    if use_gospider:
+        optional_tools.append("gospider")
+    if use_hakrawler:
+        optional_tools.append("hakrawler")
+    
+    # Check and optionally install missing tools
+    # Only auto-install in non-interactive mode or if explicitly enabled via env var
+    import os
+    auto_install = os.getenv("WEBREAPER_AUTO_INSTALL", "").lower() in ("1", "true", "yes")
+    
+    available, missing_required = check_dependencies(
+        required_tools=required_tools,
+        optional_tools=optional_tools,
+        auto_install=auto_install,
+        quiet=quiet
+    )
+    
+    # Handle missing required tools
+    if missing_required:
+        typer.secho(f"[!] Missing required tools: {', '.join(missing_required)}", fg=typer.colors.RED)
+        typer.secho("[!] Please install missing tools and try again.", fg=typer.colors.RED)
+        typer.secho("[!] Run './setup.sh' or manually install with 'go install'", fg=typer.colors.YELLOW)
+        raise typer.Exit(code=2)
+    
+    if not quiet:
+        typer.secho("[+] All required dependencies are available", fg=typer.colors.GREEN)
 
     url_sources: dict[str, set[str]] = {target: {"seed"}}
 

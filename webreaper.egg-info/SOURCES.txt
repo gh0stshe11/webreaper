@@ -3,6 +3,7 @@ pyproject.toml
 webreaper/__init__.py
 webreaper/__main__.py
 webreaper/cli.py
+webreaper/dependency_checker.py
 webreaper/paths_packs.py
 webreaper/scoring.py
 webreaper.egg-info/PKG-INFO
