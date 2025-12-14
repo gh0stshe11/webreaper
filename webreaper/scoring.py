@@ -52,6 +52,7 @@ class ScoringContext:
     response_size_bytes: Optional[int]
     base_host: Optional[str]
     unique_path: bool
+    tech: List[str] = None  # Detected technologies from httpx
 
 # Type for scoring extension functions
 ScoringExtension = Callable[[ScoringContext, List[str]], int]
@@ -74,6 +75,7 @@ def _build_context(
     response_size_bytes: Optional[int],
     base_host: Optional[str],
     unique_path: bool,
+    tech: Optional[List[str]] = None,
 ) -> ScoringContext:
     """Build a scoring context from raw inputs."""
     p = urlparse(url)
@@ -103,6 +105,7 @@ def _build_context(
         response_size_bytes=response_size_bytes,
         base_host=base_host,
         unique_path=unique_path,
+        tech=tech or [],
     )
 
 def compute_harvest_index(ctx: ScoringContext, reasons: List[str]) -> int:
@@ -116,6 +119,10 @@ def compute_harvest_index(ctx: ScoringContext, reasons: List[str]) -> int:
         H += 12; reasons.append("source:gospider (+12 H)")
     if "hakrawler" in ctx.sources:
         H += 12; reasons.append("source:hakrawler (+12 H)")
+    if "robots" in ctx.sources:
+        H += 20; reasons.append("source:robots (+20 H)")
+    if "sitemap" in ctx.sources:
+        H += 18; reasons.append("source:sitemap (+18 H)")
     if ctx.base_host and ctx.host and ctx.host != ctx.base_host:
         H += 25; reasons.append("new_host/vhost (+25 H)")
     if _path_depth(ctx.path) >= 3:
@@ -194,6 +201,7 @@ def compute_reapscore(
     response_size_bytes: Optional[int] = None,
     base_host: Optional[str] = None,
     unique_path: bool = True,
+    tech: Optional[List[str]] = None,
     weights: Optional[Dict[str, float]] = None,
     extensions: Optional[List[ScoringExtension]] = None,
 ) -> ReapResult:
@@ -202,7 +210,7 @@ def compute_reapscore(
     
     Args:
         url: Full URL of the endpoint
-        sources: Discovery sources (katana, gau, gospider, hakrawler, etc.)
+        sources: Discovery sources (katana, gau, gospider, hakrawler, robots, sitemap, etc.)
         status: HTTP status code
         content_type: Content-Type header
         redirect_location: Location header for redirects
@@ -212,6 +220,7 @@ def compute_reapscore(
         response_size_bytes: Response size in bytes
         base_host: Base target host for vhost detection
         unique_path: Whether this is a unique path on the host
+        tech: List of detected technologies (from httpx tech-detect)
         weights: Custom subscore weights (default: harvest=0.30, juice=0.35, access=0.20, anomaly=0.15)
         extensions: Optional list of custom scoring functions for community extensions
         
@@ -225,7 +234,7 @@ def compute_reapscore(
     ctx = _build_context(
         url, sources, status, content_type, redirect_location,
         has_set_cookie, www_authenticate, response_time_ms, response_size_bytes,
-        base_host, unique_path
+        base_host, unique_path, tech
     )
     
     reasons: List[str] = []
