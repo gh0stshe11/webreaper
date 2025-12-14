@@ -87,15 +87,21 @@ def write_report(findings_path: Path, out_path: Path) -> None:
 def write_eli5_report(findings_json: Path, out_md: Path) -> None:
     """Write a short ELI5 summary of what happened and what was found."""
     data = json.loads(findings_json.read_text(encoding="utf-8"))
-    meta = data.get("meta", {})
     summary = data.get("summary", {})
     endpoints = data.get("endpoints", []) or []
-    target = meta.get("target", "")
+    target = data.get("target", "")
 
     hosts = summary.get("hosts", 0)
     urls_total = summary.get("urls_total", 0)
     urls_unique = summary.get("urls_unique", 0)
-    top = endpoints[:5]
+    top_score = summary.get("top_reapscore", 0)
+    
+    # Use heapq for efficient top-k selection with large endpoint lists
+    if len(endpoints) > 100:
+        import heapq
+        top = heapq.nlargest(5, endpoints, key=lambda e: e.get("reap", {}).get("score", 0))
+    else:
+        top = sorted(endpoints, key=lambda e: e.get("reap", {}).get("score", 0), reverse=True)[:5]
 
     lines: list[str] = []
     lines.append("# webReaper ELI5 Report\n")
@@ -107,6 +113,7 @@ def write_eli5_report(findings_json: Path, out_md: Path) -> None:
     lines.append("## What it found\n")
     lines.append(f"- Hosts: **{hosts}**\n")
     lines.append(f"- URLs (total / unique): **{urls_total} / {urls_unique}**\n")
+    lines.append(f"- Top ReapScore: **{top_score}**\n")
     if top:
         lines.append("\n## Top 5 endpoints to look at first\n")
         for e in top:
