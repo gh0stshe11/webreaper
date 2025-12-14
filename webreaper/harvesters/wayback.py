@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 from typing import List, Set
+from urllib.parse import urlparse, urlencode
 
 
 async def harvest_wayback(client, target: str, timeout: int = 30) -> List[str]:
@@ -16,13 +17,10 @@ async def harvest_wayback(client, target: str, timeout: int = 30) -> List[str]:
     Returns:
         List of discovered historical URLs
     """
-    from urllib.parse import urlencode
-    
     urls: Set[str] = set()
     
     # Clean target - extract domain if it's a URL
     if "://" in target:
-        from urllib.parse import urlparse
         parsed = urlparse(target)
         domain = parsed.netloc or target
     else:

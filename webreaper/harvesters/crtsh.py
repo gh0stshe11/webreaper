@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 from typing import List, Set
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 
 async def harvest_crtsh(client, domain: str, timeout: int = 20) -> List[str]:
@@ -21,7 +21,6 @@ async def harvest_crtsh(client, domain: str, timeout: int = 20) -> List[str]:
     
     # Clean domain - extract from URL if needed
     if "://" in domain:
-        from urllib.parse import urlparse
         parsed = urlparse(domain)
         domain = parsed.netloc or domain
     

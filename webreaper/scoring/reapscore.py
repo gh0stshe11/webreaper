@@ -269,10 +269,10 @@ def compute_reapscore(
     
     # Parse URL to check for third-party indicators
     parsed = urlparse(url)
-    hostname = parsed.hostname or ""
+    hostname_lower = (parsed.hostname or "").lower()
     
     # Check if it's a common third-party domain
-    if any(indicator in hostname.lower() for indicator in THIRD_PARTY_INDICATORS):
+    if any(indicator in hostname_lower for indicator in THIRD_PARTY_INDICATORS):
         third_party_score += 0.3
         signals.append(Signal("third_party_domain", "third_party", 0.3, "Third-party service"))
         rationale.append("Third-party service detected (+0.3)")

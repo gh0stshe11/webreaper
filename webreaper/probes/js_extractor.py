@@ -25,7 +25,7 @@ def extract_endpoints_from_js(js_content: str, base_url: str) -> List[str]:
     
     # Pattern 1: String literals that look like URLs or paths
     # Matches strings like "/api/users", "/v1/endpoint", etc.
-    path_pattern = re.compile(r'''['"](/[a-zA-Z0-9/_\-\.]+)['"]''')
+    path_pattern = re.compile(r'''['"](/[a-zA-Z0-9/_.\-]+)['"]''')
     for match in path_pattern.finditer(js_content):
         path = match.group(1)
         # Filter out common non-endpoint paths
