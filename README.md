@@ -65,6 +65,8 @@ webReaper does not exploit targets — it provides discovery, context, and prior
 **Optional (for full functionality):**
 - [katana](https://github.com/projectdiscovery/katana) (ProjectDiscovery) — web crawler
 - [gau](https://github.com/lc/gau) — historical URL aggregator
+- [gospider](https://github.com/jaeles-project/gospider) — fast web spider (optional)
+- [hakrawler](https://github.com/hakluke/hakrawler) — fast web crawler (optional)
 
 ### Installation
 
@@ -126,9 +128,14 @@ webreaper packs
 |--------|---------|-------------|
 | `--katana/--no-katana` | `--katana` | Enable/disable katana web crawler |
 | `--gau/--no-gau` | `--gau` | Enable/disable gau historical URLs |
+| `--gospider/--no-gospider` | `--no-gospider` | Enable/disable gospider web crawler (optional) |
+| `--hakrawler/--no-hakrawler` | `--no-hakrawler` | Enable/disable hakrawler web crawler (optional) |
 | `--katana-depth` | `2` | Maximum crawl depth for katana |
 | `--katana-rate` | `50` | Rate limit (requests/sec) for katana |
 | `--katana-concurrency` | `5` | Concurrent connections for katana |
+| `--gospider-depth` | `2` | Maximum crawl depth for gospider |
+| `--gospider-concurrency` | `5` | Concurrent connections for gospider |
+| `--hakrawler-depth` | `2` | Maximum crawl depth for hakrawler |
 | `--gau-limit` | `1500` | Maximum URLs to fetch from gau |
 
 ### Path Discovery
@@ -140,7 +147,7 @@ webreaper packs
 | `--paths-top` | `120` | Number of paths to include from packs |
 | `--paths-extra` | `` | Comma-separated custom paths to add |
 
-**Available packs:** `common`, `auth`, `api`, `ops`, `files`, `all`
+**Available packs:** `common`, `auth`, `api`, `ops`, `files`, `sensitive`, `admin`, `discovery`, `all`
 
 ### HTTP Probing
 
@@ -273,32 +280,42 @@ For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 For contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
+For SIEM integration patterns, see [SIEM_INTEGRATION.md](SIEM_INTEGRATION.md).
+
 ### Key Design Principles
 
 1. **Prioritization over volume** — Surface high-signal endpoints first
 2. **Modular tool integration** — Easy to add new crawlers and parsers
 3. **Transparent scoring** — ReapScore reasons included in output
 4. **Safety by default** — Conservative settings to avoid harm
+5. **Community extensibility** — Plugin support for custom scoring functions
 
 ### Extending webReaper
 
-- **Add new crawlers**: Create parser in `webreaper/parsers/`, integrate in CLI
-- **Customize scoring**: Modify weights and signals in `webreaper/scoring.py`
+- **Add new crawlers**: Create parser in `webreaper/parsers/`, integrate in CLI (see: gospider, hakrawler)
+- **Customize scoring**: Modify weights and signals in `webreaper/scoring.py` or use extensions
 - **Add path packs**: Extend wordlists in `webreaper/paths_packs.py`
 - **New report formats**: Add renderers in `webreaper/report/`
+- **SIEM integration**: Follow patterns in `SIEM_INTEGRATION.md`
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions.
 
 ## Roadmap
 
-Planned enhancements:
+Recent enhancements (v0.6.4+):
 
-- [ ] **gospider/hakrawler integration** — Additional crawler options with noise controls
+- ✅ **gospider/hakrawler integration** — Additional crawler options with noise controls
+- ✅ **Enhanced path packs** — More specialized wordlists (auth, sensitive files, APIs, admin, discovery)
+- ✅ **Modular scoring system** — Community-contributed scoring extensions support
+- ✅ **SIEM integration patterns** — Export formats for enterprise workflows
+- ✅ **Comprehensive documentation** — ARCHITECTURE.md, CONTRIBUTING.md, SIEM_INTEGRATION.md
+
+Planned future enhancements:
+
 - [ ] **robots.txt/sitemap.xml fetching** — Automatic discovery file parsing
-- [ ] **Enhanced path packs** — More specialized wordlists (auth, sensitive files, APIs)
-- [ ] **Modular scoring plugins** — Community-contributed scoring extensions
-- [ ] **SIEM integration patterns** — Export formats for enterprise workflows
 - [ ] **Improved noise filtering** — ML-based false positive reduction
+- [ ] **Custom report templates** — User-defined report formats
+- [ ] **Distributed scanning** — Multi-node scanning for large targets
 
 ## License
 

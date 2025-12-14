@@ -12,6 +12,8 @@ webreaper.egg-info/entry_points.txt
 webreaper.egg-info/requires.txt
 webreaper.egg-info/top_level.txt
 webreaper/parsers/gau.py
+webreaper/parsers/gospider.py
+webreaper/parsers/hakrawler.py
 webreaper/parsers/httpx.py
 webreaper/parsers/katana.py
 webreaper/report/render_md.py
