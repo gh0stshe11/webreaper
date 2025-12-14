@@ -14,6 +14,8 @@ import typer
 from .parsers.httpx import parse_httpx_jsonlines
 from .parsers.katana import parse_katana_lines
 from .parsers.gau import parse_gau_lines
+from .parsers.gospider import parse_gospider_lines
+from .parsers.hakrawler import parse_hakrawler_lines
 from .scoring import compute_reapscore
 from .paths_packs import generate_path_urls, list_packs as list_path_packs
 from .report.render_md import write_report, write_eli5_report
@@ -152,11 +154,16 @@ def _reap_impl(
     timeout: int,
     use_katana: bool,
     use_gau: bool,
+    use_gospider: bool,
+    use_hakrawler: bool,
     max_urls: int,
     katana_depth: int,
     katana_rate: int,
     katana_concurrency: int,
     gau_limit: int,
+    gospider_depth: int,
+    gospider_concurrency: int,
+    hakrawler_depth: int,
     httpx_threads: int,
     httpx_rate: int,
     scope: Set[str],
@@ -238,7 +245,51 @@ def _reap_impl(
             if not quiet:
                 typer.secho("[!] gau not found (skipping).", fg=typer.colors.YELLOW)
 
-    candidates = [target, *katana_urls, *gau_urls]
+    gospider_urls: List[str] = []
+    if use_gospider:
+        gs_target = _normalize_target_for_katana(target)
+        gospider_cmd = ["gospider", "-s", gs_target, "-d", str(gospider_depth), "-c", str(gospider_concurrency), "--no-redirect"]
+        if not quiet:
+            typer.secho(f"[+] gospider: {' '.join(gospider_cmd)}", fg=typer.colors.GREEN)
+        try:
+            start = time.time()
+            r = _run(gospider_cmd, timeout=timeout)
+            dur = int((time.time()-start)*1000)
+            (out / f"raw_gospider_{_safe_name(gs_target)}.txt").write_text(r.stdout or "", encoding="utf-8")
+            if (r.stderr or "").strip():
+                (out / f"gospider_{_safe_name(gs_target)}.stderr.txt").write_text(r.stderr, encoding="utf-8")
+            for u in parse_gospider_lines(r.stdout or ""):
+                gospider_urls.append(u)
+                url_sources.setdefault(u, set()).add("gospider")
+            if not quiet:
+                typer.secho(f"[+] gospider harvested {len(set(gospider_urls))} urls ({dur} ms)", fg=typer.colors.GREEN)
+        except FileNotFoundError:
+            if not quiet:
+                typer.secho("[!] gospider not found (skipping).", fg=typer.colors.YELLOW)
+
+    hakrawler_urls: List[str] = []
+    if use_hakrawler:
+        hk_target = _normalize_target_for_katana(target)
+        hakrawler_cmd = ["hakrawler", "-url", hk_target, "-depth", str(hakrawler_depth), "-plain"]
+        if not quiet:
+            typer.secho(f"[+] hakrawler: {' '.join(hakrawler_cmd)}", fg=typer.colors.GREEN)
+        try:
+            start = time.time()
+            r = _run(hakrawler_cmd, timeout=timeout)
+            dur = int((time.time()-start)*1000)
+            (out / f"raw_hakrawler_{_safe_name(hk_target)}.txt").write_text(r.stdout or "", encoding="utf-8")
+            if (r.stderr or "").strip():
+                (out / f"hakrawler_{_safe_name(hk_target)}.stderr.txt").write_text(r.stderr, encoding="utf-8")
+            for u in parse_hakrawler_lines(r.stdout or ""):
+                hakrawler_urls.append(u)
+                url_sources.setdefault(u, set()).add("hakrawler")
+            if not quiet:
+                typer.secho(f"[+] hakrawler harvested {len(set(hakrawler_urls))} urls ({dur} ms)", fg=typer.colors.GREEN)
+        except FileNotFoundError:
+            if not quiet:
+                typer.secho("[!] hakrawler not found (skipping).", fg=typer.colors.YELLOW)
+
+    candidates = [target, *katana_urls, *gau_urls, *gospider_urls, *hakrawler_urls]
     merged: List[str] = []
     filtered_out = 0
     for u in candidates:
@@ -421,11 +472,16 @@ def reap(
     timeout: int = typer.Option(600, "--timeout", help="Timeout in seconds per tool"),
     katana: bool = typer.Option(True, "--katana/--no-katana", help="Enable katana crawling"),
     gau: bool = typer.Option(True, "--gau/--no-gau", help="Enable gau historical URLs"),
+    gospider: bool = typer.Option(False, "--gospider/--no-gospider", help="Enable gospider web crawler"),
+    hakrawler: bool = typer.Option(False, "--hakrawler/--no-hakrawler", help="Enable hakrawler web crawler"),
     max_urls: int = typer.Option(1500, "--max-urls", help="Hard cap on total URLs probed (prevents CPU melt)"),
     gau_limit: int = typer.Option(1500, "--gau-limit", help="Max gau URLs to keep (first N lines)"),
     katana_depth: int = typer.Option(2, "--katana-depth", help="Katana depth"),
     katana_rate: int = typer.Option(50, "--katana-rate", help="Katana rate limit (req/sec)"),
     katana_concurrency: int = typer.Option(5, "--katana-concurrency", help="Katana concurrency"),
+    gospider_depth: int = typer.Option(2, "--gospider-depth", help="gospider crawl depth"),
+    gospider_concurrency: int = typer.Option(5, "--gospider-concurrency", help="gospider concurrency"),
+    hakrawler_depth: int = typer.Option(2, "--hakrawler-depth", help="hakrawler crawl depth"),
     paths: bool = typer.Option(True, "--paths/--no-paths", help="Enable known-path probing (pack-based)"),
     paths_pack: str = typer.Option("common", "--paths-pack", help="Comma-separated pack names (common,auth,api,ops,files,all). See: webreaper packs"),
     paths_top: int = typer.Option(120, "--paths-top", help="How many known paths to add from packs"),
@@ -445,9 +501,12 @@ def reap(
     _reap_impl(
         target=target, out=out, quiet=quiet, safe=safe, timeout=timeout,
         verbose=verbose,
-        use_katana=katana, use_gau=gau,
+        use_katana=katana, use_gau=gau, use_gospider=gospider, use_hakrawler=hakrawler,
         max_urls=max_urls, katana_depth=katana_depth, katana_rate=katana_rate, katana_concurrency=katana_concurrency,
-        gau_limit=gau_limit, httpx_threads=httpx_threads, httpx_rate=httpx_rate,
+        gau_limit=gau_limit, 
+        gospider_depth=gospider_depth, gospider_concurrency=gospider_concurrency,
+        hakrawler_depth=hakrawler_depth,
+        httpx_threads=httpx_threads, httpx_rate=httpx_rate,
         scope=_csv_set(scope),
         allow_subdomains=not no_subdomains,
         exclude_host=_csv_set(exclude_host),
@@ -472,11 +531,16 @@ def scan(
     timeout: int = typer.Option(600, "--timeout", help="Timeout in seconds per tool"),
     katana: bool = typer.Option(True, "--katana/--no-katana", help="Enable katana crawling"),
     gau: bool = typer.Option(True, "--gau/--no-gau", help="Enable gau historical URLs"),
+    gospider: bool = typer.Option(False, "--gospider/--no-gospider", help="Enable gospider web crawler"),
+    hakrawler: bool = typer.Option(False, "--hakrawler/--no-hakrawler", help="Enable hakrawler web crawler"),
     max_urls: int = typer.Option(1500, "--max-urls", help="Hard cap on total URLs probed (prevents CPU melt)"),
     gau_limit: int = typer.Option(1500, "--gau-limit", help="Max gau URLs to keep (first N lines)"),
     katana_depth: int = typer.Option(2, "--katana-depth", help="Katana depth"),
     katana_rate: int = typer.Option(50, "--katana-rate", help="Katana rate limit (req/sec)"),
     katana_concurrency: int = typer.Option(5, "--katana-concurrency", help="Katana concurrency"),
+    gospider_depth: int = typer.Option(2, "--gospider-depth", help="gospider crawl depth"),
+    gospider_concurrency: int = typer.Option(5, "--gospider-concurrency", help="gospider concurrency"),
+    hakrawler_depth: int = typer.Option(2, "--hakrawler-depth", help="hakrawler crawl depth"),
     paths: bool = typer.Option(True, "--paths/--no-paths", help="Enable known-path probing (pack-based)"),
     paths_pack: str = typer.Option("common", "--paths-pack", help="Comma-separated pack names (common,auth,api,ops,files,all). See: webreaper packs"),
     paths_top: int = typer.Option(120, "--paths-top", help="How many known paths to add from packs"),
@@ -496,9 +560,12 @@ def scan(
     _reap_impl(
         target=target, out=out, quiet=quiet, safe=safe, timeout=timeout,
         verbose=verbose,
-        use_katana=katana, use_gau=gau,
+        use_katana=katana, use_gau=gau, use_gospider=gospider, use_hakrawler=hakrawler,
         max_urls=max_urls, katana_depth=katana_depth, katana_rate=katana_rate, katana_concurrency=katana_concurrency,
-        gau_limit=gau_limit, httpx_threads=httpx_threads, httpx_rate=httpx_rate,
+        gau_limit=gau_limit,
+        gospider_depth=gospider_depth, gospider_concurrency=gospider_concurrency,
+        hakrawler_depth=hakrawler_depth,
+        httpx_threads=httpx_threads, httpx_rate=httpx_rate,
         scope=_csv_set(scope),
         allow_subdomains=not no_subdomains,
         exclude_host=_csv_set(exclude_host),
