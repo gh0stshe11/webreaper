@@ -178,7 +178,7 @@ class SecurityHeadersAnalyzer(AnalyzerTool):
             "samesite_value": self._extract_samesite_value(set_cookie_value),
         }
     
-    def _extract_samesite_value(self, set_cookie_value: str) -> str | None:
+    def _extract_samesite_value(self, set_cookie_value: str) -> Optional[str]:
         """Extract SameSite attribute value from Set-Cookie header."""
         import re
         

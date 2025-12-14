@@ -52,7 +52,7 @@ class ScoringContext:
     response_size_bytes: Optional[int]
     base_host: Optional[str]
     unique_path: bool
-    tech: List[str] = None  # Detected technologies from httpx
+    tech: Optional[List[str]] = None  # Detected technologies from httpx
 
 # Type for scoring extension functions
 ScoringExtension = Callable[[ScoringContext, List[str]], int]

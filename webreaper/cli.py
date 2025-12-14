@@ -577,6 +577,7 @@ def reap(
     gau: bool = typer.Option(True, "--gau/--no-gau", help="Enable gau historical URLs"),
     gospider: bool = typer.Option(False, "--gospider/--no-gospider", help="Enable gospider web crawler"),
     hakrawler: bool = typer.Option(False, "--hakrawler/--no-hakrawler", help="Enable hakrawler web crawler"),
+    robots: bool = typer.Option(True, "--robots/--no-robots", help="Enable robots.txt and sitemap.xml discovery"),
     max_urls: int = typer.Option(1500, "--max-urls", help="Hard cap on total URLs probed (prevents CPU melt)"),
     gau_limit: int = typer.Option(1500, "--gau-limit", help="Max gau URLs to keep (first N lines)"),
     katana_depth: int = typer.Option(2, "--katana-depth", help="Katana depth"),

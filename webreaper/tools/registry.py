@@ -10,7 +10,7 @@ This module defines the core abstractions for adding new tools to webReaper:
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional, Protocol
+from typing import List, Dict, Any, Optional
 from enum import Enum
 
 
