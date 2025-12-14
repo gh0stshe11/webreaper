@@ -186,17 +186,17 @@ for tool in "${!TOOLS[@]}"; do
         print_success "$tool is already installed"
     else
         print_info "Installing $tool..."
-        go install "${TOOLS[$tool]}" 2>&1 | grep -v "go: downloading" || {
+        if go install "${TOOLS[$tool]}" 2>&1; then
+            # Verify installation
+            if command_exists "$tool"; then
+                print_success "$tool installed successfully"
+            else
+                print_error "$tool installation completed but not found in PATH"
+                print_warning "Make sure \$HOME/go/bin is in your PATH"
+            fi
+        else
             print_error "Failed to install $tool"
             exit 1
-        }
-        
-        # Verify installation
-        if command_exists "$tool"; then
-            print_success "$tool installed successfully"
-        else
-            print_error "$tool installation completed but not found in PATH"
-            print_warning "Make sure \$HOME/go/bin is in your PATH"
         fi
     fi
 done
@@ -208,7 +208,7 @@ for tool in "${!OPTIONAL_TOOLS[@]}"; do
         print_success "$tool is already installed"
     else
         print_info "Installing $tool (optional)..."
-        if go install "${OPTIONAL_TOOLS[$tool]}" 2>&1 | grep -v "go: downloading"; then
+        if go install "${OPTIONAL_TOOLS[$tool]}" 2>&1; then
             if command_exists "$tool"; then
                 print_success "$tool installed successfully"
             else

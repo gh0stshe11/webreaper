@@ -175,10 +175,10 @@ def check_dependencies(
 
 
 def verify_go_installation() -> bool:
-    """Verify that Go is properly installed and configured.
+    """Verify that Go is properly installed.
     
     Returns:
-        True if Go is available and GOPATH is set, False otherwise
+        True if Go is available, False otherwise
     """
     if not shutil.which("go"):
         return False
