@@ -123,6 +123,7 @@ webreaper reap https://example.com --dry-run --verbose
 | `--active` | `False` | Enable active probing (headers, JS) |
 | `--min-score` | `0.0` | Minimum ReapScore threshold (0.0-1.0) |
 | `--top` | `50` | Number of top endpoints in REPORT.md |
+| `--verify-ssl` | `False` | Enable SSL certificate verification |
 
 ## Output
 
