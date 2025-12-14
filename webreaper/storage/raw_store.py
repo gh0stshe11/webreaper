@@ -3,12 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 import json
-import re
 
-
-def _safe_name(s: str) -> str:
-    """Convert string to safe filename."""
-    return re.sub(r'[^a-zA-Z0-9._-]+', '_', s)[:90]
+from ..utils import safe_name
 
 
 def get_raw_file_path(out_dir: Path, source: str, target: str) -> Path:
@@ -23,7 +19,7 @@ def get_raw_file_path(out_dir: Path, source: str, target: str) -> Path:
     Returns:
         Path object for the raw file
     """
-    safe_target = _safe_name(target)
+    safe_target = safe_name(target)
     return out_dir / f"raw_{source}_{safe_target}.json"
 
 

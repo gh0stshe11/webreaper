@@ -2,7 +2,8 @@
 from __future__ import annotations
 from typing import List
 from urllib.parse import urlparse, quote
-import re
+
+from ..utils import safe_name
 
 
 def harvest(target: str, client, out_dir) -> List[str]:
@@ -44,7 +45,7 @@ def harvest(target: str, client, out_dir) -> List[str]:
         
         # Save raw CDX output
         if out_dir:
-            raw_file = out_dir / f"raw_wayback_{_safe_name(domain)}.txt"
+            raw_file = out_dir / f"raw_wayback_{safe_name(domain)}.txt"
             raw_file.write_text(response.text, encoding='utf-8')
         
         # Parse CDX output - each line is a URL
@@ -53,13 +54,8 @@ def harvest(target: str, client, out_dir) -> List[str]:
             if url and url.startswith(('http://', 'https://')):
                 urls.append(url)
                 
-    except Exception as e:
+    except Exception:
         # Silently fail - Wayback API may be unavailable
         pass
     
     return urls
-
-
-def _safe_name(s: str) -> str:
-    """Convert string to safe filename."""
-    return re.sub(r'[^a-zA-Z0-9._-]+', '_', s)[:90]

@@ -2,7 +2,8 @@
 from __future__ import annotations
 from typing import List, Optional
 from urllib.parse import urljoin, urlparse
-import re
+
+from ..utils import safe_name
 
 
 def harvest(target: str, client, out_dir) -> List[str]:
@@ -33,7 +34,7 @@ def harvest(target: str, client, out_dir) -> List[str]:
         
         # Save raw robots.txt
         if out_dir:
-            raw_file = out_dir / f"raw_robots_{_safe_name(parsed.netloc)}.txt"
+            raw_file = out_dir / f"raw_robots_{safe_name(parsed.netloc)}.txt"
             raw_file.write_text(response.text, encoding='utf-8')
         
         # Parse disallow directives
@@ -48,13 +49,8 @@ def harvest(target: str, client, out_dir) -> List[str]:
                         url = urljoin(base_url, path)
                         urls.append(url)
                         
-    except Exception as e:
+    except Exception:
         # Silently fail - robots.txt may not exist
         pass
     
     return urls
-
-
-def _safe_name(s: str) -> str:
-    """Convert string to safe filename."""
-    return re.sub(r'[^a-zA-Z0-9._-]+', '_', s)[:90]

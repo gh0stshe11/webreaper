@@ -2,7 +2,9 @@
 from __future__ import annotations
 from typing import List
 from urllib.parse import urljoin, urlparse
-import re
+
+from ..utils import safe_name
+
 try:
     from bs4 import BeautifulSoup
 except ImportError:
@@ -40,7 +42,7 @@ def harvest(target: str, client, out_dir) -> List[str]:
         
         # Save raw sitemap.xml
         if out_dir:
-            raw_file = out_dir / f"raw_sitemap_{_safe_name(parsed.netloc)}.xml"
+            raw_file = out_dir / f"raw_sitemap_{safe_name(parsed.netloc)}.xml"
             raw_file.write_text(response.text, encoding='utf-8')
         
         # Parse sitemap XML
@@ -70,13 +72,8 @@ def harvest(target: str, client, out_dir) -> List[str]:
                     except Exception:
                         pass
                         
-    except Exception as e:
+    except Exception:
         # Silently fail - sitemap.xml may not exist
         pass
     
     return urls
-
-
-def _safe_name(s: str) -> str:
-    """Convert string to safe filename."""
-    return re.sub(r'[^a-zA-Z0-9._-]+', '_', s)[:90]

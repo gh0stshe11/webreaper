@@ -2,8 +2,9 @@
 from __future__ import annotations
 from typing import List
 from urllib.parse import urlparse
-import re
 import json
+
+from ..utils import safe_name
 
 
 def harvest(target: str, client, out_dir) -> List[str]:
@@ -47,7 +48,7 @@ def harvest(target: str, client, out_dir) -> List[str]:
         
         # Save raw crt.sh output
         if out_dir:
-            raw_file = out_dir / f"raw_crtsh_{_safe_name(domain)}.json"
+            raw_file = out_dir / f"raw_crtsh_{safe_name(domain)}.json"
             raw_file.write_text(response.text, encoding='utf-8')
         
         # Parse JSON response
@@ -72,13 +73,8 @@ def harvest(target: str, client, out_dir) -> List[str]:
         except json.JSONDecodeError:
             pass
             
-    except Exception as e:
+    except Exception:
         # Silently fail - crt.sh may be unavailable or have no data
         pass
     
     return urls
-
-
-def _safe_name(s: str) -> str:
-    """Convert string to safe filename."""
-    return re.sub(r'[^a-zA-Z0-9._-]+', '_', s)[:90]
