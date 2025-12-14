@@ -2,7 +2,6 @@ from __future__ import annotations
 import json
 import subprocess
 import time
-import re
 import sys
 from pathlib import Path
 from typing import List, Optional, Set
@@ -17,6 +16,7 @@ from .parsers.gau import parse_gau_lines
 from .scoring import compute_reapscore
 from .paths_packs import generate_path_urls, list_packs as list_path_packs
 from .report.render_md import write_report, write_eli5_report
+from .utils import safe_name
 
 app = typer.Typer(add_completion=False, help="webReaper: harvest → probe → rank → report")
 
@@ -54,9 +54,6 @@ def banner(*, quiet: bool) -> None:
 
     typer.secho("          ╲", fg=typer.colors.RED, bold=True)
     typer.echo("")
-
-def _safe_name(s: str) -> str:
-    return re.sub(r"[^a-zA-Z0-9._-]+", "_", s)[:90]
 
 def _run(cmd: List[str], *, input_text: Optional[str] = None, timeout: int = 600) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, input=input_text, text=True, capture_output=True, timeout=timeout)
@@ -204,9 +201,9 @@ def _reap_impl(
             start = time.time()
             r = _run(katana_cmd, timeout=timeout)
             dur = int((time.time()-start)*1000)
-            (out / f"raw_katana_{_safe_name(kt)}.txt").write_text(r.stdout or "", encoding="utf-8")
+            (out / f"raw_katana_{safe_name(kt)}.txt").write_text(r.stdout or "", encoding="utf-8")
             if (r.stderr or "").strip():
-                (out / f"katana_{_safe_name(kt)}.stderr.txt").write_text(r.stderr, encoding="utf-8")
+                (out / f"katana_{safe_name(kt)}.stderr.txt").write_text(r.stderr, encoding="utf-8")
             for u in parse_katana_lines(r.stdout or ""):
                 katana_urls.append(u)
                 url_sources.setdefault(u, set()).add("katana")
@@ -226,9 +223,9 @@ def _reap_impl(
             dur = int((time.time()-start)*1000)
             lines = (r.stdout or "").splitlines()[:gau_limit]
             gau_out = "\n".join(lines) + ("\n" if lines else "")
-            (out / f"raw_gau_{_safe_name(base)}.txt").write_text(gau_out, encoding="utf-8")
+            (out / f"raw_gau_{safe_name(base)}.txt").write_text(gau_out, encoding="utf-8")
             if (r.stderr or "").strip():
-                (out / f"gau_{_safe_name(base)}.stderr.txt").write_text(r.stderr, encoding="utf-8")
+                (out / f"gau_{safe_name(base)}.stderr.txt").write_text(r.stderr, encoding="utf-8")
             for u in parse_gau_lines(gau_out):
                 gau_urls.append(u)
                 url_sources.setdefault(u, set()).add("gau")
