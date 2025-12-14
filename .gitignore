@@ -4,3 +4,4 @@ __pycache__/
 runs/
 out/
 v6*/
+*.egg-info/
