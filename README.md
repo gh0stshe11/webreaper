@@ -47,25 +47,97 @@ webReaper does not exploit targets — it provides discovery, context, and prior
 
 ## Install
 
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
+```
 
 ## Usage
 
-webreaper reap https://example.com -o out/
+### Basic Usage
 
+```bash
+webreaper reap https://example.com -o out/
+```
+
+### Phase A Features
+
+Phase A introduces passive harvesters, header analysis, JS endpoint extraction, and an explainable ReapScore system.
+
+**Quick Start (Passive Mode)**
+```bash
+# Passive reconnaissance only (no active probing)
+webreaper reap https://example.com -o out/ --verbose
+
+# Use specific sources
+webreaper reap https://example.com --sources robots,sitemap,wayback -o out/
+
+# Resume mode (skip harvesting if raw_* files exist)
+webreaper reap https://example.com -o out/ --resume
+```
+
+**Active Probing**
+```bash
+# Enable header analysis and JS endpoint extraction
+webreaper reap https://example.com -o out/ --active --verbose
+
+# Active mode with custom concurrency and timeout
+webreaper reap https://example.com -o out/ --active \
+  --concurrency 20 \
+  --timeout 15 \
+  --rate-limit 10
+```
+
+**Filtering and Output Control**
+```bash
+# Filter results by minimum ReapScore
+webreaper reap https://example.com -o out/ --active \
+  --min-score 0.5 \
+  --top 25
+
+# Custom user agent
 webreaper reap https://example.com -o out/ \
-  --exclude-ext png,jpg,jpeg,gif,css,js,svg,ico,woff,woff2 \
-  --exclude-path logout,signout \
-  --max-params 8
+  --user-agent "MyScanner/1.0"
+```
+
+**Dry Run Mode**
+```bash
+# Test configuration without making requests
+webreaper reap https://example.com --dry-run --verbose
+```
+
+### CLI Flags Reference
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--sources` | `robots,sitemap,wayback,crtsh` | Comma-separated list of harvesters |
+| `--concurrency` | `10` | Maximum concurrent requests |
+| `--timeout` | `10` | Request timeout in seconds |
+| `--user-agent` | `webReaper/0.6.4` | Custom User-Agent string |
+| `--rate-limit` | `None` | Maximum requests per second |
+| `-o, --out-dir` | `out` | Output directory |
+| `--resume` | `False` | Skip harvesting if raw_* files exist |
+| `-v, --verbose` | `False` | Verbose output |
+| `--dry-run` | `False` | Dry run mode (no requests) |
+| `--active` | `False` | Enable active probing (headers, JS) |
+| `--min-score` | `0.0` | Minimum ReapScore threshold (0.0-1.0) |
+| `--top` | `50` | Number of top endpoints in REPORT.md |
 
 ## Output
 
 webReaper writes structured output to the specified directory:
-REPORT.md — ranked endpoints with scoring rationale
-ELI5-REPORT.md — plain-language summary of findings
-findings.json — machine-readable results
-raw_* files — raw discovery data from each source
+
+- **REPORT.md** — Top-ranked endpoints with explainable ReapScore rationale
+- **findings.json** — Machine-readable results with per-signal scores
+- **raw_*.json** — Cached raw data from each harvester (robots, sitemap, wayback, crtsh)
+
+The ReapScore (0.0-1.0) combines multiple signals across categories:
+- **Discovery** (20%): Source novelty, path depth, subdomain discovery
+- **Params** (25%): Query parameters, high-value param names
+- **Sensitivity** (30%): Auth keywords, status codes (401/403), header security signals
+- **Tech** (10%): Technology detection, JS endpoints discovered
+- **Anomalies** (10%): Server errors, slow responses, missing security headers
+- **Third Party** (5%): External service detection
 
 Start with the top-ranked endpoints in REPORT.md to guide further investigation.

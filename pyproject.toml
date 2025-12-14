@@ -7,10 +7,30 @@ name = "webreaper"
 version = "0.6.4"
 description = "webReaper: harvest → probe → rank → report"
 requires-python = ">=3.10"
-dependencies = ["typer>=0.12.0"]
+dependencies = [
+    "click>=8.1.0",
+    "httpx>=0.24.0",
+    "beautifulsoup4>=4.12.0",
+    "jinja2>=3.1.0",
+    "pyyaml>=6.0",
+    "tldextract>=3.4.0",
+]
 
 [project.scripts]
-webreaper = "webreaper.cli:app"
+webreaper = "webreaper.cli:cli"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4.0"]
 
 [tool.setuptools]
-packages = ["webreaper", "webreaper.parsers", "webreaper.report"]
+packages = [
+    "webreaper",
+    "webreaper.parsers",
+    "webreaper.report",
+    "webreaper.harvesters",
+    "webreaper.probes",
+    "webreaper.scoring",
+    "webreaper.output",
+    "webreaper.storage",
+    "webreaper.core"
+]
