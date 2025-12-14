@@ -1,0 +1,6 @@
+Metadata-Version: 2.4
+Name: webreaper
+Version: 0.6.4
+Summary: webReaper: harvest → probe → rank → report
+Requires-Python: >=3.10
+Requires-Dist: typer>=0.12.0

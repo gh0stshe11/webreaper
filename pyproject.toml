@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "webreaper"
+version = "0.6.4"
+description = "webReaper: harvest → probe → rank → report"
+requires-python = ">=3.10"
+dependencies = ["typer>=0.12.0"]
+
+[project.scripts]
+webreaper = "webreaper.cli:app"
+
+[tool.setuptools]
+packages = ["webreaper", "webreaper.parsers", "webreaper.report"]
