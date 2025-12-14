@@ -1,2 +1,0 @@
-[console_scripts]
-webreaper = webreaper.cli:cli
