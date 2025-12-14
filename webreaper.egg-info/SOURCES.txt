@@ -18,3 +18,9 @@ webreaper/parsers/hakrawler.py
 webreaper/parsers/httpx.py
 webreaper/parsers/katana.py
 webreaper/report/render_md.py
+webreaper/tools/__init__.py
+webreaper/tools/content_patterns.py
+webreaper/tools/registry.py
+webreaper/tools/robots_sitemap.py
+webreaper/tools/security_headers.py
+webreaper/tools/technology_scorer.py

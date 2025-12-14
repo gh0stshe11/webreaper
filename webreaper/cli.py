@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 from typing import List, Optional, Set
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, urljoin
 from datetime import datetime
 
 import typer
@@ -20,6 +20,7 @@ from .scoring import compute_reapscore
 from .paths_packs import generate_path_urls, list_packs as list_path_packs
 from .report.render_md import write_report, write_eli5_report
 from .dependency_checker import check_dependencies, check_tool
+from .tools.robots_sitemap import parse_robots_txt, parse_sitemap_xml
 
 app = typer.Typer(add_completion=False, help="webReaper: harvest → probe → rank → report")
 
@@ -157,6 +158,7 @@ def _reap_impl(
     use_gau: bool,
     use_gospider: bool,
     use_hakrawler: bool,
+    use_robots: bool,
     max_urls: int,
     katana_depth: int,
     katana_rate: int,
@@ -329,7 +331,67 @@ def _reap_impl(
             if not quiet:
                 typer.secho("[!] hakrawler not found (skipping).", fg=typer.colors.YELLOW)
 
-    candidates = [target, *katana_urls, *gau_urls, *gospider_urls, *hakrawler_urls]
+    # Robots.txt and sitemap.xml discovery
+    robots_urls: List[str] = []
+    sitemap_urls: List[str] = []
+    if use_robots:
+        base_url = _normalize_target_for_katana(target)
+        
+        # Fetch robots.txt
+        robots_url = urljoin(base_url, "/robots.txt")
+        if not quiet:
+            typer.secho(f"[+] Fetching robots.txt from {robots_url}", fg=typer.colors.GREEN)
+        
+        try:
+            start = time.time()
+            r = _run(["httpx", "-silent", "-u", robots_url], timeout=30)
+            dur = int((time.time()-start)*1000)
+            
+            if r.stdout:
+                (out / "raw_robots.txt").write_text(r.stdout, encoding="utf-8")
+                # Parse robots.txt for paths
+                for u in parse_robots_txt(base_url, r.stdout):
+                    robots_urls.append(u)
+                    url_sources.setdefault(u, set()).add("robots")
+                
+                # Extract sitemap URLs from robots.txt and fetch them
+                sitemap_locations = []
+                for line in r.stdout.splitlines():
+                    line = line.strip()
+                    if line.lower().startswith("sitemap:"):
+                        parts = line.split(":", 1)
+                        if len(parts) == 2:
+                            sitemap_loc = parts[1].strip()
+                            if sitemap_loc and "://" in sitemap_loc:
+                                sitemap_locations.append(sitemap_loc)
+                
+                # If no sitemap in robots.txt, try default location
+                if not sitemap_locations:
+                    sitemap_locations.append(urljoin(base_url, "/sitemap.xml"))
+                
+                # Fetch and parse sitemaps (limit to first 3 to avoid recursion)
+                for sitemap_loc in sitemap_locations[:3]:
+                    try:
+                        sitemap_r = _run(["httpx", "-silent", "-u", sitemap_loc], timeout=30)
+                        if sitemap_r.stdout:
+                            sitemap_name = _safe_name(sitemap_loc)
+                            (out / f"raw_sitemap_{sitemap_name}.xml").write_text(sitemap_r.stdout, encoding="utf-8")
+                            
+                            for u in parse_sitemap_xml(sitemap_r.stdout):
+                                sitemap_urls.append(u)
+                                url_sources.setdefault(u, set()).add("sitemap")
+                    except Exception:
+                        pass  # Silently skip failed sitemap fetches
+                
+                if not quiet:
+                    total_disc = len(set(robots_urls)) + len(set(sitemap_urls))
+                    typer.secho(f"[+] robots/sitemap discovered {total_disc} urls (robots:{len(set(robots_urls))}, sitemap:{len(set(sitemap_urls))}) ({dur} ms)", fg=typer.colors.GREEN)
+        
+        except Exception as e:
+            if not quiet:
+                typer.secho(f"[!] robots/sitemap discovery failed: {e}", fg=typer.colors.YELLOW)
+
+    candidates = [target, *katana_urls, *gau_urls, *gospider_urls, *hakrawler_urls, *robots_urls, *sitemap_urls]
     merged: List[str] = []
     filtered_out = 0
     for u in candidates:
@@ -425,6 +487,7 @@ def _reap_impl(
             response_size_bytes=ep.body_size,
             base_host=base,
             unique_path=unique_path,
+            tech=ep.tech,
         )
 
         endpoint_dicts.append({
@@ -542,6 +605,7 @@ def reap(
         target=target, out=out, quiet=quiet, safe=safe, timeout=timeout,
         verbose=verbose,
         use_katana=katana, use_gau=gau, use_gospider=gospider, use_hakrawler=hakrawler,
+        use_robots=robots,
         max_urls=max_urls, katana_depth=katana_depth, katana_rate=katana_rate, katana_concurrency=katana_concurrency,
         gau_limit=gau_limit, 
         gospider_depth=gospider_depth, gospider_concurrency=gospider_concurrency,
@@ -573,6 +637,7 @@ def scan(
     gau: bool = typer.Option(True, "--gau/--no-gau", help="Enable gau historical URLs"),
     gospider: bool = typer.Option(False, "--gospider/--no-gospider", help="Enable gospider web crawler"),
     hakrawler: bool = typer.Option(False, "--hakrawler/--no-hakrawler", help="Enable hakrawler web crawler"),
+    robots: bool = typer.Option(True, "--robots/--no-robots", help="Enable robots.txt and sitemap.xml discovery"),
     max_urls: int = typer.Option(1500, "--max-urls", help="Hard cap on total URLs probed (prevents CPU melt)"),
     gau_limit: int = typer.Option(1500, "--gau-limit", help="Max gau URLs to keep (first N lines)"),
     katana_depth: int = typer.Option(2, "--katana-depth", help="Katana depth"),
@@ -601,6 +666,7 @@ def scan(
         target=target, out=out, quiet=quiet, safe=safe, timeout=timeout,
         verbose=verbose,
         use_katana=katana, use_gau=gau, use_gospider=gospider, use_hakrawler=hakrawler,
+        use_robots=robots,
         max_urls=max_urls, katana_depth=katana_depth, katana_rate=katana_rate, katana_concurrency=katana_concurrency,
         gau_limit=gau_limit,
         gospider_depth=gospider_depth, gospider_concurrency=gospider_concurrency,
