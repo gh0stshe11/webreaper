@@ -37,6 +37,7 @@ class WebReaperController:
         active: bool = False,
         min_score: float = 0.0,
         top: int = 50,
+        verify_ssl: bool = False,
     ):
         """Initialize controller."""
         self.target = target
@@ -52,6 +53,7 @@ class WebReaperController:
         self.active = active
         self.min_score = min_score
         self.top = top
+        self.verify_ssl = verify_ssl
         
         self.store = RawStore(self.out_dir)
         self.semaphore = asyncio.Semaphore(concurrency)
@@ -185,10 +187,14 @@ class WebReaperController:
                 "endpoints": [],
             }
         
-        # Create HTTP client (SSL verification disabled for reconnaissance)
-        # WARNING: SSL verification is disabled to avoid certificate issues during recon
+        # Create HTTP client
+        # Note: SSL verification is disabled by default for reconnaissance to avoid certificate issues
+        # Use --verify-ssl to enable strict SSL verification
+        if not self.verify_ssl and self.verbose:
+            self.log("SSL verification disabled (use --verify-ssl to enable)")
+        
         headers = {"User-Agent": self.user_agent}
-        async with httpx.AsyncClient(headers=headers, verify=False) as client:
+        async with httpx.AsyncClient(headers=headers, verify=self.verify_ssl) as client:
             # Step 1: Harvest URLs
             self.log("Starting harvest phase...")
             harvest_results = await self.harvest(client)

@@ -94,6 +94,12 @@ def cli(ctx):
     type=int,
     help="Number of top endpoints to include in REPORT.md",
 )
+@click.option(
+    "--verify-ssl",
+    is_flag=True,
+    default=False,
+    help="Enable SSL certificate verification (disabled by default for recon)",
+)
 def reap(
     target: str,
     sources: str,
@@ -108,6 +114,7 @@ def reap(
     active: bool,
     min_score: float,
     top: int,
+    verify_ssl: bool,
 ):
     """Run webReaper reconnaissance on TARGET."""
     
@@ -129,6 +136,7 @@ def reap(
         active=active,
         min_score=min_score,
         top=top,
+        verify_ssl=verify_ssl,
     )
     
     # Run async controller

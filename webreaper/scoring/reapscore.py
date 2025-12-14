@@ -272,7 +272,7 @@ def compute_reapscore(
     # === AGGREGATE SCORE ===
     final_score = sum(
         category_scores[cat] * w[cat]
-        for cat in category_scores.keys()
+        for cat in category_scores
     )
     
     final_score = max(0.0, min(1.0, final_score))
