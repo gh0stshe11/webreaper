@@ -15,6 +15,17 @@ DEFAULT_WEIGHTS = {
     "third_party": 0.05,
 }
 
+# Third-party service indicators
+THIRD_PARTY_INDICATORS = [
+    "cdn.",
+    "static.",
+    "assets.",
+    "s3.amazonaws.com",
+    "cloudfront.net",
+    "googleapis.com",
+    "akamai.net",
+]
+
 
 @dataclass
 class Signal:
@@ -261,8 +272,7 @@ def compute_reapscore(
     hostname = parsed.hostname or ""
     
     # Check if it's a common third-party domain
-    third_party_indicators = ["cdn.", "static.", "assets.", "s3.amazonaws.com", "cloudfront.net"]
-    if any(indicator in hostname.lower() for indicator in third_party_indicators):
+    if any(indicator in hostname.lower() for indicator in THIRD_PARTY_INDICATORS):
         third_party_score += 0.3
         signals.append(Signal("third_party_domain", "third_party", 0.3, "Third-party service"))
         rationale.append("Third-party service detected (+0.3)")

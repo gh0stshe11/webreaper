@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Set, Any
 from urllib.parse import urlparse, parse_qs
 import httpx
 
+from .. import __version__
 from ..storage.raw_store import RawStore
 from ..harvesters.robots import harvest_robots
 from ..harvesters.sitemap import harvest_sitemap
@@ -45,7 +46,7 @@ class WebReaperController:
         self.sources = sources or ["robots", "sitemap", "wayback", "crtsh"]
         self.concurrency = concurrency
         self.timeout = timeout
-        self.user_agent = user_agent or "webReaper/0.6.4 (https://github.com/gh0stshe11/webreaper)"
+        self.user_agent = user_agent or f"webReaper/{__version__} (https://github.com/gh0stshe11/webreaper)"
         self.rate_limit = rate_limit
         self.resume = resume
         self.verbose = verbose

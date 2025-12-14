@@ -6,6 +6,10 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 
 
+# Maximum number of JavaScript files to fetch and analyze
+MAX_JS_FILES = 20
+
+
 def extract_endpoints_from_js(js_content: str, base_url: str) -> List[str]:
     """
     Extract API endpoints and URLs from JavaScript content.
@@ -115,7 +119,7 @@ async def extract_js_endpoints(client, url: str, timeout: int = 10) -> List[str]
                 js_urls.add(js_url)
         
         # Fetch and analyze external JS files (limit to avoid DoS)
-        for js_url in list(js_urls)[:20]:  # Limit to 20 JS files
+        for js_url in list(js_urls)[:MAX_JS_FILES]:
             try:
                 js_response = await client.get(js_url, timeout=timeout, follow_redirects=True)
                 if js_response.status_code == 200:
