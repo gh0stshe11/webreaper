@@ -97,11 +97,11 @@ async def probe_headers(client, url: str, timeout: int = 10) -> HeaderAnalysis:
         
         if "access-control-allow-credentials" in headers:
             analysis.cors_allow_credentials = headers["access-control-allow-credentials"]
-            if headers["access-control-allow-credentials"].lower() == "true":
+            if analysis.cors_allow_credentials.lower() == "true":
                 analysis.signals.append("cors_credentials")
         
         # Check for dangerous CORS combination
-        if analysis.cors_allow_origin == "*" and analysis.cors_allow_credentials:
+        if analysis.cors_allow_origin == "*" and analysis.cors_allow_credentials and analysis.cors_allow_credentials.lower() == "true":
             analysis.signals.append("cors_misconfiguration")
         
         # Content Security Policy

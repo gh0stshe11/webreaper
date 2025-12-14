@@ -102,6 +102,9 @@ def compute_reapscore(
     header_signals = header_signals or []
     w = {**DEFAULT_WEIGHTS, **(weights or {})}
     
+    # Convert sources to lowercase once for efficiency
+    sources_lower = [s.lower() for s in sources]
+    
     signals: List[Signal] = []
     category_scores: Dict[str, float] = {
         "discovery": 0.0,
@@ -116,22 +119,22 @@ def compute_reapscore(
     # === DISCOVERY CATEGORY ===
     discovery_score = 0.0
     
-    if "wayback" in [s.lower() for s in sources]:
+    if "wayback" in sources_lower:
         discovery_score += 0.3
         signals.append(Signal("wayback_source", "discovery", 0.3, "Found in Wayback Machine"))
         rationale.append("Historical URL from Wayback Machine (+0.3)")
     
-    if "robots" in [s.lower() for s in sources]:
+    if "robots" in sources_lower:
         discovery_score += 0.4
         signals.append(Signal("robots_source", "discovery", 0.4, "Found in robots.txt"))
         rationale.append("Disallowed in robots.txt (+0.4)")
     
-    if "sitemap" in [s.lower() for s in sources]:
+    if "sitemap" in sources_lower:
         discovery_score += 0.2
         signals.append(Signal("sitemap_source", "discovery", 0.2, "Found in sitemap.xml"))
         rationale.append("Listed in sitemap.xml (+0.2)")
     
-    if "crtsh" in [s.lower() for s in sources] or is_subdomain:
+    if "crtsh" in sources_lower or is_subdomain:
         discovery_score += 0.5
         signals.append(Signal("subdomain_discovery", "discovery", 0.5, "Subdomain discovered"))
         rationale.append("New subdomain discovered (+0.5)")

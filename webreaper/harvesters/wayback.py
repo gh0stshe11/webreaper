@@ -2,7 +2,6 @@
 from __future__ import annotations
 import json
 from typing import List, Set
-from urllib.parse import quote
 
 
 async def harvest_wayback(client, target: str, timeout: int = 30) -> List[str]:
@@ -17,6 +16,8 @@ async def harvest_wayback(client, target: str, timeout: int = 30) -> List[str]:
     Returns:
         List of discovered historical URLs
     """
+    from urllib.parse import urlencode
+    
     urls: Set[str] = set()
     
     # Clean target - extract domain if it's a URL
@@ -27,15 +28,14 @@ async def harvest_wayback(client, target: str, timeout: int = 30) -> List[str]:
     else:
         domain = target.strip()
     
-    # Build CDX API URL
-    # Format: https://web.archive.org/cdx/search/cdx?url={target}&output=json&fl=original&collapse=urlkey
-    cdx_url = (
-        f"https://web.archive.org/cdx/search/cdx"
-        f"?url={quote(domain)}"
-        f"&output=json"
-        f"&fl=original"
-        f"&collapse=urlkey"
-    )
+    # Build CDX API URL using urlencode
+    params = {
+        "url": domain,
+        "output": "json",
+        "fl": "original",
+        "collapse": "urlkey"
+    }
+    cdx_url = f"https://web.archive.org/cdx/search/cdx?{urlencode(params)}"
     
     try:
         response = await client.get(cdx_url, timeout=timeout, follow_redirects=True)

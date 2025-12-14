@@ -185,7 +185,8 @@ class WebReaperController:
                 "endpoints": [],
             }
         
-        # Create HTTP client
+        # Create HTTP client (SSL verification disabled for reconnaissance)
+        # WARNING: SSL verification is disabled to avoid certificate issues during recon
         headers = {"User-Agent": self.user_agent}
         async with httpx.AsyncClient(headers=headers, verify=False) as client:
             # Step 1: Harvest URLs
