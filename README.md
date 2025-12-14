@@ -218,6 +218,7 @@ webreaper packs
 | `--gau/--no-gau` | `--gau` | Enable/disable gau historical URLs |
 | `--gospider/--no-gospider` | `--no-gospider` | Enable/disable gospider web crawler (optional) |
 | `--hakrawler/--no-hakrawler` | `--no-hakrawler` | Enable/disable hakrawler web crawler (optional) |
+| `--robots/--no-robots` | `--robots` | Enable/disable robots.txt and sitemap.xml discovery |
 | `--katana-depth` | `2` | Maximum crawl depth for katana |
 | `--katana-rate` | `50` | Rate limit (requests/sec) for katana |
 | `--katana-concurrency` | `5` | Concurrent connections for katana |
@@ -271,6 +272,10 @@ webReaper writes structured output to the specified directory:
 | `hosts.txt` | List of all discovered hosts |
 | `raw_katana_*.txt` | Raw output from katana crawler |
 | `raw_gau_*.txt` | Raw output from gau historical URLs |
+| `raw_gospider_*.txt` | Raw output from gospider crawler (if enabled) |
+| `raw_hakrawler_*.txt` | Raw output from hakrawler crawler (if enabled) |
+| `raw_robots.txt` | Raw robots.txt content (if robots discovery enabled) |
+| `raw_sitemap_*.xml` | Raw sitemap XML content (if robots discovery enabled) |
 | `raw_httpx.jsonl` | Raw JSON-lines output from httpx |
 | `run.log` | Timestamped execution log with timing info |
 
@@ -370,6 +375,8 @@ For contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 For SIEM integration patterns, see [SIEM_INTEGRATION.md](SIEM_INTEGRATION.md).
 
+For detailed tools documentation, see [TOOLS.md](TOOLS.md).
+
 ### Key Design Principles
 
 1. **Prioritization over volume** — Surface high-signal endpoints first
@@ -378,9 +385,31 @@ For SIEM integration patterns, see [SIEM_INTEGRATION.md](SIEM_INTEGRATION.md).
 4. **Safety by default** — Conservative settings to avoid harm
 5. **Community extensibility** — Plugin support for custom scoring functions
 
+### Tools System
+
+webReaper includes a modular tools system for extending data collection and scoring:
+
+**Discovery Tools** - Find URLs from various sources:
+- 🌐 **robots/sitemap** - Parse robots.txt and sitemap.xml (enabled by default)
+- 🕷️ **katana** - Modern web crawler (enabled by default)
+- 📜 **gau** - Historical URL aggregator (enabled by default)
+- 🕸️ **gospider** - Fast web spider (optional)
+- 🦀 **hakrawler** - JS-heavy crawler (optional)
+
+**Analyzer Tools** - Extract metadata from responses:
+- 🔒 **security_headers** - Analyze HTTP security headers for auth signals
+- 🔍 **content_patterns** - Detect sensitive data patterns in response bodies
+- 📊 **technology_scorer** - Score based on detected web technologies
+
+**Scoring Tools** - Enhance ReapScore calculation:
+- 🎯 **technology_scorer** - Bonus points for high-value tech stacks (admin panels, debug tools, etc.)
+
+See [TOOLS.md](TOOLS.md) for complete documentation on built-in tools and how to create custom tools.
+
 ### Extending webReaper
 
-- **Add new crawlers**: Create parser in `webreaper/parsers/`, integrate in CLI (see: gospider, hakrawler)
+- **Add new crawlers**: Create parser in `webreaper/parsers/`, integrate in CLI (see: gospiper, hakrawler)
+- **Add custom tools**: Implement DiscoveryTool, AnalyzerTool, or ScoringTool interfaces (see: [TOOLS.md](TOOLS.md))
 - **Customize scoring**: Modify weights and signals in `webreaper/scoring.py` or use extensions
 - **Add path packs**: Extend wordlists in `webreaper/paths_packs.py`
 - **New report formats**: Add renderers in `webreaper/report/`
@@ -390,17 +419,24 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions.
 
 ## Roadmap
 
-Recent enhancements (v0.6.4+):
+Recent enhancements (v0.6.5+):
 
+- ✅ **Tools system** — Modular framework for discovery, analysis, and scoring tools
+- ✅ **robots.txt/sitemap.xml** — Automatic discovery file parsing
+- ✅ **Security headers analyzer** — HTTP security header analysis for scoring
+- ✅ **Content pattern detector** — Identifies sensitive data and error patterns
+- ✅ **Technology scorer** — Bonus scoring for high-value technology stacks
 - ✅ **gospider/hakrawler integration** — Additional crawler options with noise controls
 - ✅ **Enhanced path packs** — More specialized wordlists (auth, sensitive files, APIs, admin, discovery)
 - ✅ **Modular scoring system** — Community-contributed scoring extensions support
 - ✅ **SIEM integration patterns** — Export formats for enterprise workflows
-- ✅ **Comprehensive documentation** — ARCHITECTURE.md, CONTRIBUTING.md, SIEM_INTEGRATION.md
+- ✅ **Comprehensive documentation** — ARCHITECTURE.md, CONTRIBUTING.md, SIEM_INTEGRATION.md, TOOLS.md
 
 Planned future enhancements:
 
-- [ ] **robots.txt/sitemap.xml fetching** — Automatic discovery file parsing
+- [ ] **Advanced content analysis** — JavaScript API extraction and form analysis
+- [ ] **DNS enumeration tool** — Subdomain discovery via DNS
+- [ ] **Certificate transparency** — CT log parsing for subdomain discovery
 - [ ] **Improved noise filtering** — ML-based false positive reduction
 - [ ] **Custom report templates** — User-defined report formats
 - [ ] **Distributed scanning** — Multi-node scanning for large targets
