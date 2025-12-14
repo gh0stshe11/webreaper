@@ -1,7 +1,7 @@
 """Main controller orchestrating webReaper operations."""
 from __future__ import annotations
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Any
 from urllib.parse import urlparse, parse_qs
@@ -180,7 +180,7 @@ class WebReaperController:
             self.log("DRY RUN MODE - No actual requests will be made")
             return {
                 "target": self.target,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "dry_run": True,
                 "endpoints": [],
             }
@@ -294,7 +294,7 @@ class WebReaperController:
             # Step 4: Build findings
             findings = {
                 "target": self.target,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "config": {
                     "sources": self.sources,
                     "concurrency": self.concurrency,

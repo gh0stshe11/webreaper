@@ -1,7 +1,7 @@
 """Output exporters for webReaper findings."""
 from __future__ import annotations
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Any
 
@@ -32,7 +32,7 @@ def write_report_md(findings: Dict[str, Any], output_path: Path, top_n: int = 50
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     target = findings.get("target", "Unknown")
-    timestamp = findings.get("timestamp", datetime.utcnow().isoformat() + "Z")
+    timestamp = findings.get("timestamp", datetime.now(timezone.utc).isoformat())
     endpoints = findings.get("endpoints", [])
     summary = findings.get("summary", {})
     
