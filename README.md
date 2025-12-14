@@ -70,10 +70,52 @@ webReaper does not exploit targets — it provides discovery, context, and prior
 
 ### Installation
 
+#### Option 1: Automated Setup (Recommended for Kali Linux)
+
+The setup script automatically installs all dependencies including Go and required tools:
+
 ```bash
 # Clone the repository
 git clone https://github.com/gh0stshe11/webreaper.git
 cd webreaper
+
+# Run the automated setup script
+./setup.sh
+
+# Create virtual environment and install webReaper
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+The `setup.sh` script will:
+- Check and install Go if not present
+- Install required tools (`httpx`, `katana`, `gau`)
+- Install optional tools (`gospider`, `hakrawler`)
+- Configure your PATH environment variables
+- Provide helpful error messages and next steps
+
+#### Option 2: Manual Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/gh0stshe11/webreaper.git
+cd webreaper
+
+# Install Go (if not already installed)
+# Visit https://go.dev/doc/install
+
+# Install required tools
+go install github.com/projectdiscovery/httpx/cmd/httpx@latest
+go install github.com/projectdiscovery/katana/cmd/katana@latest
+go install github.com/lc/gau/v2/cmd/gau@latest
+
+# Install optional tools
+go install github.com/jaeles-project/gospider@latest
+go install github.com/hakluke/hakrawler@latest
+
+# Ensure Go binaries are in PATH
+export PATH=$PATH:$HOME/go/bin
 
 # Create virtual environment
 python3 -m venv .venv
@@ -81,6 +123,52 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install webReaper
 pip install -e .
+```
+
+#### Automatic Dependency Installation
+
+webReaper can automatically check and install missing tools at runtime:
+
+```bash
+# Enable automatic installation without prompting (useful for automation)
+export WEBREAPER_AUTO_INSTALL=true
+webreaper reap https://example.com -o out/
+
+# Or install interactively when prompted
+webreaper reap https://example.com -o out/
+# You'll be prompted to install any missing tools
+```
+
+### Troubleshooting
+
+**Tools not found after installation:**
+
+If you get errors about missing tools even after installation, ensure Go binaries are in your PATH:
+
+```bash
+# Add to your ~/.bashrc or ~/.zshrc
+export PATH=$PATH:/usr/local/go/bin
+export PATH=$PATH:$HOME/go/bin
+
+# Reload your shell configuration
+source ~/.bashrc  # or source ~/.zshrc
+```
+
+**Go not installed:**
+
+If you don't have Go installed, either:
+1. Run `./setup.sh` which will install it automatically
+2. Visit https://go.dev/doc/install for manual installation
+
+**Permission issues:**
+
+If you encounter permission issues during setup:
+```bash
+# Make sure setup.sh is executable
+chmod +x setup.sh
+
+# Some operations may require sudo
+sudo ./setup.sh
 ```
 
 ### Basic Usage
