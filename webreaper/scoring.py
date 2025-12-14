@@ -140,8 +140,8 @@ def compute_juice_score(ctx: ScoringContext, reasons: List[str]) -> int:
         J += 25; reasons.append("path_keywords (+25 J)")
     if ctx.ext:
         J += 10; reasons.append(f"dynamic_ext:{ctx.ext} (+10 J)")
-    # API path detection
-    if ctx.path_lc.startswith("/api/") or "/v1/" in ctx.path_lc or "/v2/" in ctx.path_lc or "/v3/" in ctx.path_lc:
+    # API path detection - check for versioned API paths
+    if "/api/" in ctx.path_lc and any(f"/v{i}/" in ctx.path_lc for i in range(1, 5)):
         J += 15; reasons.append("api_versioned_path (+15 J)")
     return clamp(J)
 
@@ -237,6 +237,8 @@ def compute_reapscore(
     N = compute_anomaly_signal(ctx, reasons)
     
     # Apply custom extensions if provided
+    # Note: Extensions should return positive integers to add bonus points to JuiceScore
+    # Negative or zero values are ignored to prevent score manipulation
     if extensions:
         for ext_func in extensions:
             try:

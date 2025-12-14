@@ -95,7 +95,13 @@ def write_eli5_report(findings_json: Path, out_md: Path) -> None:
     urls_total = summary.get("urls_total", 0)
     urls_unique = summary.get("urls_unique", 0)
     top_score = summary.get("top_reapscore", 0)
-    top = sorted(endpoints, key=lambda e: e.get("reap", {}).get("score", 0), reverse=True)[:5]
+    
+    # Use heapq for efficient top-k selection with large endpoint lists
+    if len(endpoints) > 100:
+        import heapq
+        top = heapq.nlargest(5, endpoints, key=lambda e: e.get("reap", {}).get("score", 0))
+    else:
+        top = sorted(endpoints, key=lambda e: e.get("reap", {}).get("score", 0), reverse=True)[:5]
 
     lines: list[str] = []
     lines.append("# webReaper ELI5 Report\n")

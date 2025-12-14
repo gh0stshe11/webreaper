@@ -2,6 +2,9 @@ from __future__ import annotations
 from typing import List
 from urllib.parse import urlparse
 
+# Metadata patterns that hakrawler may output
+HAKRAWLER_METADATA_PATTERNS = ("[", "Starting", "Finished", "Error", "Warning")
+
 def parse_hakrawler_lines(output: str) -> List[str]:
     """Parse hakrawler output and return valid URLs.
     
@@ -26,9 +29,8 @@ def parse_hakrawler_lines(output: str) -> List[str]:
         if "://" not in u:
             continue
         
-        # hakrawler sometimes outputs debugging info or metadata
         # Skip lines that start with common metadata patterns
-        if u.startswith(("[", "Starting", "Finished", "Error", "Warning")):
+        if u.startswith(HAKRAWLER_METADATA_PATTERNS):
             continue
         
         try:
