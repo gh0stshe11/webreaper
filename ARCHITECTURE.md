@@ -186,20 +186,100 @@ webreaper/
 ├── cli.py                # CLI interface (Typer), main orchestration
 ├── scoring.py            # ReapScore algorithm and weights
 ├── paths_packs.py        # Path wordlists and URL generation
+├── dependency_checker.py # Tool dependency checking and installation
 ├── parsers/              # Tool output parsers
 │   ├── httpx.py          # httpx JSON parser
 │   ├── katana.py         # katana line parser
-│   └── gau.py            # gau line parser
-└── report/               # Report generation
-    └── render_md.py      # Markdown report rendering
+│   ├── gau.py            # gau line parser
+│   ├── gospider.py       # gospider line parser
+│   └── hakrawler.py      # hakrawler line parser
+├── report/               # Report generation
+│   └── render_md.py      # Markdown report rendering
+└── tools/                # Extensible tools system
+    ├── __init__.py       # Tools module initialization
+    ├── registry.py       # Tool registry and base classes
+    ├── robots_sitemap.py # robots.txt/sitemap.xml discovery
+    ├── security_headers.py # Security header analysis
+    ├── content_patterns.py # Content pattern detection
+    └── technology_scorer.py # Technology-based scoring
 ```
+
+## Tools System
+
+webReaper includes a modular tools system for extending discovery, analysis, and scoring capabilities.
+
+### Tool Categories
+
+1. **Discovery Tools** (`DiscoveryTool`)
+   - Find URLs and endpoints from various sources
+   - Examples: robots/sitemap parser, DNS enumeration, CT log parser
+   - Contribute to HarvestIndex subscore
+
+2. **Analyzer Tools** (`AnalyzerTool`)
+   - Extract metadata and signals from HTTP responses
+   - Examples: security headers, content patterns, form analysis
+   - Provide data for scoring calculations
+
+3. **Scoring Tools** (`ScoringTool`)
+   - Contribute bonus scores based on specific conditions
+   - Examples: technology scorer, input vector scorer
+   - Enhance JuiceScore and other subscores
+
+### Tool Registry
+
+The global tool registry manages all available tools:
+
+```python
+from webreaper.tools import get_global_registry
+
+registry = get_global_registry()
+
+# List all registered tools
+for tool in registry.list_tools():
+    print(f"{tool.name}: {tool.description}")
+
+# Register custom tools
+registry.register_discovery(MyCustomDiscoveryTool())
+registry.register_analyzer(MyAnalyzerTool())
+registry.register_scorer(MyScoringTool())
+```
+
+### Built-in Tools
+
+**Discovery Tools:**
+- `robots_sitemap` - Parses robots.txt and sitemap.xml files (enabled by default)
+  - Fetches /robots.txt and extracts Disallow/Allow paths
+  - Follows Sitemap directives and parses XML
+  - Tags URLs with "robots" or "sitemap" source
+
+**Analyzer Tools:**
+- `security_headers` - Analyzes HTTP security headers
+  - Detects missing security headers (CSP, HSTS, X-Frame-Options, etc.)
+  - Identifies CORS misconfigurations
+  - Analyzes cookie security flags
+  
+- `content_patterns` - Detects sensitive data patterns in response bodies
+  - API keys, tokens, credentials
+  - Error messages and stack traces
+  - Debug/development information
+  - API documentation patterns
+
+**Scoring Tools:**
+- `technology_scorer` - Provides bonus scores for detected technologies
+  - Admin panels (phpMyAdmin, Adminer): +25
+  - Debug tools (XDebug, phpinfo): +30
+  - Legacy frameworks (Struts): +25
+  - Database interfaces: +20
+  - SSO/auth systems: +20
+
+See [TOOLS.md](TOOLS.md) for complete documentation.
 
 ## Configuration & Extensibility
 
 ### CLI Configuration
 
 All major behaviors are configurable via CLI flags:
-- Discovery tool toggles (`--katana/--no-katana`, `--gau/--no-gau`)
+- Discovery tool toggles (`--katana/--no-katana`, `--gau/--no-gau`, `--robots/--no-robots`, `--gospider/--no-gospider`, `--hakrawler/--no-hakrawler`)
 - Rate limiting and threading (`--httpx-threads`, `--katana-rate`)
 - Filtering rules (`--scope`, `--exclude-ext`, `--max-params`)
 - Path pack selection (`--paths-pack`, `--paths-extra`)
@@ -229,7 +309,39 @@ result = compute_reapscore(
 
 ### Adding New Discovery Tools
 
-To integrate a new discovery tool:
+There are two approaches to adding discovery tools:
+
+**Approach 1: Using the Tools System (Recommended)**
+
+Create a class implementing the `DiscoveryTool` interface:
+
+```python
+from webreaper.tools import DiscoveryTool, ToolMetadata, ToolCategory, get_global_registry
+
+class MyDiscoveryTool(DiscoveryTool):
+    @property
+    def metadata(self) -> ToolMetadata:
+        return ToolMetadata(
+            name="my_tool",
+            category=ToolCategory.DISCOVERY,
+            description="My custom discovery tool",
+            version="1.0.0",
+            enabled_by_default=False,
+        )
+    
+    def discover(self, target: str, **kwargs) -> List[str]:
+        urls = []
+        # Your discovery logic here
+        return urls
+
+# Register the tool
+registry = get_global_registry()
+registry.register_discovery(MyDiscoveryTool())
+```
+
+**Approach 2: Direct Parser Integration (Legacy)**
+
+To integrate a new external tool directly:
 
 1. Create a parser in `webreaper/parsers/<tool>.py`
 2. Implement a function that returns `List[str]` of URLs
@@ -266,15 +378,47 @@ webReaper includes safety controls to minimize risk during reconnaissance:
 - **Scope Controls**: Prevent unintended scanning of out-of-scope targets
 - **No Exploitation**: webReaper is discovery-only, no active exploitation
 
+## Recent Enhancements
+
+Version 0.6.5+ includes:
+
+1. **Modular Tools System**
+   - Extensible framework for discovery, analyzer, and scoring tools
+   - Tool registry for managing custom extensions
+   - Base classes for creating new tools
+
+2. **robots.txt/sitemap.xml Discovery**
+   - Automatic fetching and parsing of robots.txt
+   - Sitemap XML parsing with support for sitemap indexes
+   - Integration into HarvestIndex scoring (+20 for robots, +18 for sitemap)
+
+3. **Advanced Analysis Tools**
+   - Security headers analyzer for detecting missing protections
+   - Content pattern detector for sensitive data and errors
+   - Technology scorer for high-value tech stacks
+
+4. **gospider/hakrawler Integration**
+   - Additional crawler options for comprehensive URL discovery
+   - Noise control and filtering options
+
+5. **Enhanced Documentation**
+   - TOOLS.md with complete tools documentation
+   - Updated ARCHITECTURE.md with tools system details
+   - SIEM_INTEGRATION.md for enterprise workflows
+
 ## Future Enhancements
 
 Planned features documented in the roadmap:
-1. **gospider/hakrawler** integration for additional crawling options
-2. **robots.txt/sitemap.xml** automatic fetching
-3. **SIEM integration** patterns for enterprise workflows
-4. **Plugin system** for community-contributed scoring extensions
-5. **Enhanced path packs** with more specialized wordlists
-6. **Improved noise filtering** with ML-based false positive reduction
+1. **Advanced Content Analysis** - JavaScript API extraction and form analysis
+2. **DNS Enumeration Tool** - Subdomain discovery via DNS queries
+3. **Certificate Transparency** - CT log parsing for subdomain discovery
+4. **Wayback Machine Integration** - Additional historical URL source beyond gau
+5. **Common Crawl Parser** - Parse Common Crawl data for URLs
+6. **Form Analyzer** - Detect and analyze HTML forms for input vectors
+7. **JavaScript Analyzer** - Extract API endpoints from JavaScript files
+8. **Enhanced Noise Filtering** - ML-based false positive reduction
+9. **Custom Report Templates** - User-defined report formats
+10. **Distributed Scanning** - Multi-node scanning for large targets
 
 ## Dependencies
 
